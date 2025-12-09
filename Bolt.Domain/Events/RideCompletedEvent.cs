@@ -1,17 +1,21 @@
-﻿namespace Bolt.Domain.Events;
+﻿using Bolt.Domain.ValueObjects;
+
+namespace Bolt.Domain.Events;
 
 public sealed class RideCompletedEvent : IDomainEvent
 {
-    public Guid RideOrderId { get; }
+    public Guid RideId { get; }
     public Guid DriverId { get; }
-    public Guid UserId { get; }
+    public Guid PassengerId { get; }
+    public Money FinalFare { get; }
     public DateTime OccurredOn { get; }
 
-    public RideCompletedEvent(Guid rideOrderId, Guid driverId, Guid userId)
+    public RideCompletedEvent(Guid rideId, Guid driverId, Guid passengerId, Money finalFare)
     {
-        RideOrderId = rideOrderId;
+        RideId = rideId;
         DriverId = driverId;
-        UserId = userId;
+        PassengerId = passengerId;
+        FinalFare = finalFare;
         OccurredOn = DateTime.UtcNow;
     }
 }

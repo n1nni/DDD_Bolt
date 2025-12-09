@@ -10,6 +10,7 @@
         {
             IsSuccess = true;
             Value = value;
+            Error = null;
         }
 
         private Result(string error)

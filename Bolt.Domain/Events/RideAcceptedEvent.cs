@@ -2,13 +2,13 @@
 
 public sealed class RideAcceptedEvent : IDomainEvent
 {
-    public Guid RideOrderId { get; }
+    public Guid RideId { get; }
     public Guid DriverId { get; }
     public DateTime OccurredOn { get; }
 
-    public RideAcceptedEvent(Guid rideOrderId, Guid driverId)
+    public RideAcceptedEvent(Guid rideId, Guid driverId)
     {
-        RideOrderId = rideOrderId;
+        RideId = rideId;
         DriverId = driverId;
         OccurredOn = DateTime.UtcNow;
     }

@@ -1,8 +1,6 @@
 ﻿namespace Bolt.Domain.Events;
 
-/// <summary>
-/// Marker interface for domain events.
-/// </summary>
+// Marker interface for domain events.
 public interface IDomainEvent
 {
     DateTime OccurredOn { get; }

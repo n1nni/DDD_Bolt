@@ -4,146 +4,220 @@ using Bolt.Domain.Events;
 using Bolt.Domain.Exceptions;
 using Bolt.Domain.Shared;
 using Bolt.Domain.ValueObjects;
+using System.ComponentModel.DataAnnotations;
 
 namespace Bolt.Domain.Entities;
 
+// TODO:
+// event logs
 public class RideOrder : IAggregateRoot
 {
     public Guid Id { get; private set; }
-    public Guid UserId { get; private set; }
+
+    // Reference to the passenger who requested the ride
+    public Guid PassengerId { get; private set; }
+
+    // Reference to the driver who accepted the ride (nullable until accepted)
     public Guid? DriverId { get; private set; }
-    public Address Pickup { get; private set; }
-    public Address Destination { get; private set; }
+
+    public Address PickupAddress { get; private set; }
+    public Address DestinationAddress { get; private set; }
     public Money EstimatedFare { get; private set; }
     public Money? FinalFare { get; private set; }
-    public OrderStatus Status { get; private set; }
+    public RideStatus Status { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
     public DateTime? AcceptedAt { get; private set; }
+    public DateTime? StartedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
+    public DateTime? CancelledAt { get; private set; }
+
     public string? CancellationReason { get; private set; }
+    public Guid? CancelledBy { get; private set; }
 
     private readonly List<IDomainEvent> _domainEvents = new();
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    private RideOrder() { } // EF / ORM
+    private RideOrder() { } // EF Core
 
-    private RideOrder(Guid id, Guid userId, Address pickup, Address destination, Money estimatedFare)
+    private RideOrder(
+        Guid id,
+        Guid passengerId,
+        Address pickupAddress,
+        Address destinationAddress,
+        Money estimatedFare)
     {
         Id = id;
-        UserId = userId;
-        Pickup = pickup;
-        Destination = destination;
+        PassengerId = passengerId;
+        PickupAddress = pickupAddress;
+        DestinationAddress = destinationAddress;
         EstimatedFare = estimatedFare;
-        Status = OrderStatus.Created;
+        Status = RideStatus.Created;
         CreatedAt = DateTime.UtcNow;
     }
 
-    // FACTORY (Result<T>)
-    public static Result<RideOrder> Create(Guid id, Guid userId, Address pickup, Address destination, Money estimatedFare)
+    public static Result<RideOrder> Create(
+        Guid id,
+        Passenger passenger,
+        Address pickupAddress,
+        Address destinationAddress,
+        Money estimatedFare)
     {
         if (id == Guid.Empty)
-            return Result<RideOrder>.Failure("RideOrder ID cannot be empty.");
+            return Result<RideOrder>.Failure("Ride ID cannot be empty.");
 
-        if (userId == Guid.Empty)
-            return Result<RideOrder>.Failure("User ID cannot be empty.");
+        if (passenger == null)
+            return Result<RideOrder>.Failure("Passenger is required.");
 
-        if (pickup is null)
+        if (pickupAddress == null)
             return Result<RideOrder>.Failure("Pickup address is required.");
 
-        if (destination is null)
+        if (destinationAddress == null)
             return Result<RideOrder>.Failure("Destination address is required.");
 
-        if (estimatedFare is null)
+        if (estimatedFare == null)
             return Result<RideOrder>.Failure("Estimated fare is required.");
 
-        var order = new RideOrder(id, userId, pickup, destination, estimatedFare);
+        var ride = new RideOrder(id, passenger.Id, pickupAddress, destinationAddress, estimatedFare);
+        ride.AddDomainEvent(new RideCreatedEvent(id, passenger.Id, pickupAddress, destinationAddress));
 
-        order.AddDomainEvent(new RideCreatedEvent(id, userId, pickup, destination));
+        Console.WriteLine($"[LOG] Ride created: {id} by Passenger {passenger.Id}");
 
-        return Result<RideOrder>.Success(order);
+        return Result<RideOrder>.Success(ride);
     }
 
-    // Domain Event Helpers
-    private void AddDomainEvent(IDomainEvent @event) => _domainEvents.Add(@event);
-    public void ClearDomainEvents() => _domainEvents.Clear();
-
-
-    // BEHAVIOR / STATE TRANSITIONS
-    public void Accept(Guid driverId)
+    public Result<bool> Accept(Driver driver)
     {
-        if (driverId == Guid.Empty)
-            throw new ArgumentException(nameof(driverId));
+        if (driver == null)
+            return Result<bool>.Failure("Driver cannot be null.");
 
-        if (Status != OrderStatus.Created && Status != OrderStatus.Rejected)
-            throw new BusinessRuleViolationException($"Cannot accept ride in status {Status}");
+        if (!driver.IsAvailable)
+            return Result<bool>.Failure("Driver is not available.");
 
-        DriverId = driverId;
-        Status = OrderStatus.Accepted;
+        if (Status != RideStatus.Created && Status != RideStatus.Rejected)
+            return Result<bool>.Failure($"Cannot accept ride in status {Status}.");
+
+        DriverId = driver.Id;
+        Status = RideStatus.Accepted;
         AcceptedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideAcceptedEvent(Id, driverId));
+        AddDomainEvent(new RideAcceptedEvent(Id, driver.Id));
+        Console.WriteLine($"[LOG] Ride accepted: {Id} by Driver {driver.Id}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void Reject(Guid driverId)
+    public Result<bool> Reject(Driver driver, string reason)
     {
-        if (driverId == Guid.Empty)
-            throw new ArgumentException(nameof(driverId));
+        if (driver == null)
+            return Result<bool>.Failure("Driver cannot be null.");
 
-        if (Status != OrderStatus.Created)
-            throw new BusinessRuleViolationException("Only created rides can be rejected.");
+        if (Status != RideStatus.Created)
+            return Result<bool>.Failure("Only created rides can be rejected.");
 
-        DriverId = driverId;
-        Status = OrderStatus.Rejected;
+        Status = RideStatus.Rejected;
+        CancellationReason = reason?.Trim();
+
+        Console.WriteLine($"[LOG] Ride rejected: {Id} by Driver {driver.Id}. Reason: {reason}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void StartArriving()
+    public Result<bool> StartArriving()
     {
-        if (Status != OrderStatus.Accepted)
-            throw new BusinessRuleViolationException("Ride must be accepted before the driver can start arriving.");
+        if (!DriverId.HasValue)
+            return Result<bool>.Failure("No driver assigned to this ride.");
 
-        Status = OrderStatus.DriverArriving;
+        if (Status != RideStatus.Accepted)
+            return Result<bool>.Failure("Ride must be accepted before driver can start arriving.");
+
+        Status = RideStatus.DriverArriving;
+        Console.WriteLine($"[LOG] Driver arriving for ride: {Id}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void StartRide()
+    public Result<bool> Start()
     {
-        if (Status != OrderStatus.DriverArriving && Status != OrderStatus.Accepted)
-            throw new BusinessRuleViolationException("Ride must be accepted or arriving before starting.");
+        if (!DriverId.HasValue)
+            return Result<bool>.Failure("No driver assigned to this ride.");
 
-        Status = OrderStatus.InProgress;
+        if (Status != RideStatus.DriverArriving && Status != RideStatus.Accepted)
+            return Result<bool>.Failure("Ride must be in 'Accepted' or 'DriverArriving' status to start.");
+
+        Status = RideStatus.InProgress;
+        StartedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RideStartedEvent(Id, DriverId.Value));
+        Console.WriteLine($"[LOG] Ride started: {Id}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void Complete(Money finalFare)
+    public Result<bool> Complete(Money finalFare)
     {
-        if (Status != OrderStatus.InProgress)
-            throw new BusinessRuleViolationException("Ride must be in progress to complete.");
+        if (!DriverId.HasValue)
+            return Result<bool>.Failure("No driver assigned to this ride.");
 
-        FinalFare = finalFare ?? throw new ArgumentNullException(nameof(finalFare));
-        Status = OrderStatus.Completed;
+        if (Status != RideStatus.InProgress)
+            return Result<bool>.Failure("Ride must be in progress to complete.");
+
+        if (finalFare == null)
+            return Result<bool>.Failure("Final fare is required.");
+
+        FinalFare = finalFare;
+        Status = RideStatus.Completed;
         CompletedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideCompletedEvent(Id, DriverId ?? Guid.Empty, UserId));
+        AddDomainEvent(new RideCompletedEvent(Id, DriverId.Value, PassengerId, finalFare));
+        Console.WriteLine($"[LOG] Ride completed: {Id}. Final fare: {finalFare}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void CancelByUser(string reason)
+    public Result<bool> Cancel(Guid cancelledBy, string reason)
     {
-        if (Status is OrderStatus.Completed or OrderStatus.Cancelled)
-            throw new BusinessRuleViolationException("Cannot cancel a completed or already cancelled ride.");
+        if (Status == RideStatus.Completed)
+            return Result<bool>.Failure("Cannot cancel a completed ride.");
 
-        if (Status == OrderStatus.InProgress)
-            throw new BusinessRuleViolationException("Cannot cancel a ride in progress.");
+        if (Status == RideStatus.Cancelled)
+            return Result<bool>.Failure("Ride is already cancelled.");
 
-        Status = OrderStatus.Cancelled;
-        CancellationReason = reason;
+        if (Status == RideStatus.InProgress)
+            return Result<bool>.Failure("Cannot cancel a ride in progress.");
+
+        Status = RideStatus.Cancelled;
+        CancellationReason = reason?.Trim();
+        CancelledBy = cancelledBy;
+        CancelledAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RideCancelledEvent(Id, cancelledBy, reason ?? "No reason provided"));
+        Console.WriteLine($"[LOG] Ride cancelled: {Id} by User {cancelledBy}. Reason: {reason}");
+
+        return Result<bool>.Success(true);
     }
 
-    public void UpdateEstimatedFare(Money newEstimate)
+    public Result<bool> UpdateEstimatedFare(Money newEstimate)
     {
-        if (newEstimate is null)
-            throw new ArgumentNullException(nameof(newEstimate));
+        if (newEstimate == null)
+            return Result<bool>.Failure("Estimated fare cannot be null.");
 
-        if (Status != OrderStatus.Created)
-            throw new BusinessRuleViolationException("Estimated fare can only be updated before the ride is accepted.");
+        if (Status != RideStatus.Created)
+            return Result<bool>.Failure("Estimated fare can only be updated before the ride is accepted.");
 
         EstimatedFare = newEstimate;
+        Console.WriteLine($"[LOG] Ride estimated fare updated: {Id} - New fare: {newEstimate}");
+
+        return Result<bool>.Success(true);
+    }
+
+    private void AddDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
     }
 }

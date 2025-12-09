@@ -13,13 +13,32 @@ public sealed class Location : IEquatable<Location>
         Longitude = longitude;
     }
 
+    public double CalculateDistanceTo(Location other)
+    {
+        // Haversine formula for distance calculation
+        const double earthRadiusKm = 6371;
+
+        var dLat = DegreesToRadians(other.Latitude - Latitude);
+        var dLon = DegreesToRadians(other.Longitude - Longitude);
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(DegreesToRadians(Latitude)) * Math.Cos(DegreesToRadians(other.Latitude)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+
+    private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180;
+
     public bool Equals(Location? other)
     {
         if (other is null) return false;
-        return Latitude == other.Latitude && Longitude == other.Longitude;
+        return Math.Abs(Latitude - other.Latitude) < 0.0001 &&
+               Math.Abs(Longitude - other.Longitude) < 0.0001;
     }
 
     public override bool Equals(object? obj) => Equals(obj as Location);
     public override int GetHashCode() => HashCode.Combine(Latitude, Longitude);
-    public override string ToString() => $"{Latitude},{Longitude}";
+    public override string ToString() => $"{Latitude:F6},{Longitude:F6}";
 }

@@ -7,46 +7,61 @@ namespace Bolt.Domain.Entities;
 public class Review : IAggregateRoot
 {
     public Guid Id { get; private set; }
+    public Guid RideId { get; private set; }
     public Guid DriverId { get; private set; }
-    public Guid UserId { get; private set; }
+    public Guid PassengerId { get; private set; }
     public Rating Rating { get; private set; }
-    public string Comment { get; private set; } = string.Empty;
+    public string Comment { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    private Review() { }
+    private Review() { } // EF Core
 
-    private Review(Guid id, Guid driverId, Guid userId, Rating rating, string comment)
+    private Review(
+        Guid id,
+        Guid rideId,
+        Guid driverId,
+        Guid passengerId,
+        Rating rating,
+        string comment)
     {
         Id = id;
+        RideId = rideId;
         DriverId = driverId;
-        UserId = userId;
+        PassengerId = passengerId;
         Rating = rating;
         Comment = comment?.Trim() ?? string.Empty;
         CreatedAt = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Creates a new Review aggregate in a safe, validated manner.
-    /// </summary>
-    public static Result<Review> Create(Guid id, Guid driverId, Guid userId, Rating rating, string comment)
+    public static Result<Review> Create(
+        Guid id,
+        Guid rideId,
+        Driver driver,
+        Passenger passenger,
+        Rating rating,
+        string comment)
     {
         if (id == Guid.Empty)
-            return Result<Review>.Failure("Review id cannot be empty.");
+            return Result<Review>.Failure("Review ID cannot be empty.");
 
-        if (driverId == Guid.Empty)
-            return Result<Review>.Failure("Driver id cannot be empty.");
+        if (rideId == Guid.Empty)
+            return Result<Review>.Failure("Ride ID cannot be empty.");
 
-        if (userId == Guid.Empty)
-            return Result<Review>.Failure("User id cannot be empty.");
+        if (driver == null)
+            return Result<Review>.Failure("Driver cannot be null.");
 
-        if (rating is null)
+        if (passenger == null)
+            return Result<Review>.Failure("Passenger cannot be null.");
+
+        if (rating == null)
             return Result<Review>.Failure("Rating cannot be null.");
 
-        // Optional domain rule: comment length
         if (!string.IsNullOrWhiteSpace(comment) && comment.Length > 500)
-            return Result<Review>.Failure("Comment is too long (max 500 characters).");
+            return Result<Review>.Failure("Comment cannot exceed 500 characters.");
 
-        var review = new Review(id, driverId, userId, rating, comment);
+        var review = new Review(id, rideId, driver.Id, passenger.Id, rating, comment);
+        Console.WriteLine($"[LOG] Review created: {id} for Driver {driver.Id} by Passenger {passenger.Id}");
+
         return Result<Review>.Success(review);
     }
 }

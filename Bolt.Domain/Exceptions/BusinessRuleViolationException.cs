@@ -1,10 +1,7 @@
-﻿namespace Bolt.Domain.Exceptions
+﻿namespace Bolt.Domain.Exceptions;
+
+// Signals a business rule violation.
+public sealed class BusinessRuleViolationException : DomainException
 {
-    /// <summary>
-    /// Signals a business rule violation.
-    /// </summary>
-    public sealed class BusinessRuleViolationException : DomainException
-    {
-        public BusinessRuleViolationException(string message) : base(message) { }
-    }
+    public BusinessRuleViolationException(string message) : base(message) { }
 }

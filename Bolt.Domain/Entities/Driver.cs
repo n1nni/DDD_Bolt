@@ -1,82 +1,107 @@
 ﻿using Bolt.Domain.Abstractions;
+using Bolt.Domain.Enums;
 using Bolt.Domain.Shared;
 using Bolt.Domain.ValueObjects;
 
 namespace Bolt.Domain.Entities;
 
-public sealed class Driver : IAggregateRoot
+public sealed class Driver : User
 {
-    public Guid Id { get; private set; }
-    public Guid UserId { get; private set; }
-    public string FullName { get; private set; }
-    public string VehicleDescription { get; private set; }
+    public string LicenseNumber { get; private set; }
+    public string VehicleModel { get; private set; }
+    public string VehiclePlateNumber { get; private set; }
     public bool IsAvailable { get; private set; }
     public Rating? Rating { get; private set; }
 
     private readonly List<Guid> _completedRideIds = new();
     public IReadOnlyCollection<Guid> CompletedRideIds => _completedRideIds.AsReadOnly();
-    
-    private Driver() { }
 
-    private Driver(Guid id, Guid userId, string fullName, string vehicleDescription)
+    private Driver() { } // EF Core
+
+    internal Driver(Guid id, string fullName, string email, string phoneNumber)
+        : base(id, fullName, email, phoneNumber, UserRole.Driver)
     {
-        Id = id;
-        UserId = userId;
-        FullName = fullName;
-        VehicleDescription = vehicleDescription;
-        IsAvailable = true;
+        IsAvailable = false; // Driver must complete onboarding first
     }
 
-    // Factory Method
-    public static Result<Driver> Create(
+    public static Result<Driver> CreateDriver(
         Guid id,
-        Guid userId,
         string fullName,
-        string vehicleDescription)
+        string email,
+        string phoneNumber,
+        string licenseNumber,
+        string vehicleModel,
+        string vehiclePlateNumber)
     {
         if (id == Guid.Empty)
-            return Result<Driver>.Failure("Driver id cannot be empty.");
-
-        if (userId == Guid.Empty)
-            return Result<Driver>.Failure("User id cannot be empty.");
+            return Result<Driver>.Failure("Driver ID cannot be empty.");
 
         if (string.IsNullOrWhiteSpace(fullName))
-            return Result<Driver>.Failure("Driver full name cannot be empty.");
+            return Result<Driver>.Failure("Full name is required.");
 
-        var driver = new Driver(
-            id,
-            userId,
-            fullName.Trim(),
-            vehicleDescription?.Trim() ?? string.Empty
-        );
+        if (string.IsNullOrWhiteSpace(email))
+            return Result<Driver>.Failure("Email is required.");
 
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return Result<Driver>.Failure("Phone number is required.");
+
+        if (string.IsNullOrWhiteSpace(licenseNumber))
+            return Result<Driver>.Failure("License number is required.");
+
+        if (string.IsNullOrWhiteSpace(vehicleModel))
+            return Result<Driver>.Failure("Vehicle model is required.");
+
+        if (string.IsNullOrWhiteSpace(vehiclePlateNumber))
+            return Result<Driver>.Failure("Vehicle plate number is required.");
+
+        var driver = new Driver(id, fullName.Trim(), email.Trim().ToLowerInvariant(), phoneNumber.Trim())
+        {
+            LicenseNumber = licenseNumber.Trim(),
+            VehicleModel = vehicleModel.Trim(),
+            VehiclePlateNumber = vehiclePlateNumber.Trim().ToUpperInvariant()
+        };
+
+        Console.WriteLine($"[LOG] Driver created: {driver.Id} - {driver.FullName}");
         return Result<Driver>.Success(driver);
     }
 
-    // Behaviors (Methods)
     public void SetAvailability(bool available)
     {
         IsAvailable = available;
+        Console.WriteLine($"[LOG] Driver availability changed: {Id} - Available: {available}");
     }
 
-    public Result<bool> AddCompletedRide(Guid rideOrderId)
+    public void UpdateVehicleInfo(string vehicleModel, string vehiclePlateNumber)
     {
-        if (rideOrderId == Guid.Empty)
-            return Result<bool>.Failure("Ride order ID cannot be empty.");
+        if (string.IsNullOrWhiteSpace(vehicleModel))
+            throw new ArgumentException("Vehicle model is required.", nameof(vehicleModel));
 
-        if (_completedRideIds.Contains(rideOrderId))
-            return Result<bool>.Failure("Ride already exists in the completed list.");
+        if (string.IsNullOrWhiteSpace(vehiclePlateNumber))
+            throw new ArgumentException("Vehicle plate number is required.", nameof(vehiclePlateNumber));
 
-        _completedRideIds.Add(rideOrderId);
+        VehicleModel = vehicleModel.Trim();
+        VehiclePlateNumber = vehiclePlateNumber.Trim().ToUpperInvariant();
+
+        Console.WriteLine($"[LOG] Driver vehicle info updated: {Id}");
+    }
+
+    public Result<bool> AddCompletedRide(Guid rideId)
+    {
+        if (rideId == Guid.Empty)
+            return Result<bool>.Failure("Ride ID cannot be empty.");
+
+        if (_completedRideIds.Contains(rideId))
+            return Result<bool>.Failure("Ride already exists in completed list.");
+
+        _completedRideIds.Add(rideId);
+        Console.WriteLine($"[LOG] Completed ride added to driver: Driver {Id}, Ride {rideId}");
+
         return Result<bool>.Success(true);
     }
 
-    public Result<bool> UpdateRating(Rating rating)
+    public void UpdateRating(Rating rating)
     {
-        if (rating is null)
-            return Result<bool>.Failure("Rating cannot be null.");
-
-        Rating = rating;
-        return Result<bool>.Success(true);
+        Rating = rating ?? throw new ArgumentNullException(nameof(rating));
+        Console.WriteLine($"[LOG] Driver rating updated: {Id} - New rating: {rating}");
     }
 }
