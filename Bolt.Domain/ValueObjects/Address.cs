@@ -7,7 +7,12 @@ public sealed class Address : IEquatable<Address>
     public string? PostalCode { get; }
     public Location Location { get; }
 
-    private Address() { } // EF Core
+    private Address()
+    {
+        Street = null!; 
+        City = null!;
+        Location = null!;
+    }
 
     public Address(string street, string city, Location location, string? postalCode = null)
     {

@@ -31,34 +31,45 @@ public class CreateRideCommandHandler : IRequestHandler<CreateRideCommand, Resul
         CreateRideCommand request,
         CancellationToken cancellationToken)
     {
+        Console.WriteLine($"[DEBUG] Creating ride for passenger: {request.PassengerId}");
+
         var passenger = await _userRepository.GetPassengerByIdAsync(
             request.PassengerId,
             cancellationToken);
 
         if (passenger == null)
         {
+            Console.WriteLine($"[DEBUG] Passenger not found: {request.PassengerId}");
             return Result.Failure<Guid>("Passenger not found.");
         }
 
+        // Create Location objects
         var pickupLocation = new Location(request.PickupLatitude, request.PickupLongitude);
+        var destinationLocation = new Location(request.DestinationLatitude, request.DestinationLongitude);
+
+        Console.WriteLine($"[DEBUG] Created locations - Pickup: {pickupLocation}, Destination: {destinationLocation}");
+
+        // Create Address objects
         var pickupAddress = new Address(
             request.PickupStreet,
             request.PickupCity,
             pickupLocation,
             request.PickupPostalCode);
 
-        var destinationLocation = new Location(
-            request.DestinationLatitude,
-            request.DestinationLongitude);
         var destinationAddress = new Address(
             request.DestinationStreet,
             request.DestinationCity,
             destinationLocation,
             request.DestinationPostalCode);
 
+        Console.WriteLine($"[DEBUG] Created addresses - Pickup: {pickupAddress}, Destination: {destinationAddress}");
+
+        // Calculate estimated fare
         var estimatedFare = _pricingService.CalculateEstimatedFare(
             pickupLocation,
             destinationLocation);
+
+        Console.WriteLine($"[DEBUG] Estimated fare: {estimatedFare}");
 
         var rideResult = RideOrder.Create(
             Guid.NewGuid(),
@@ -69,11 +80,16 @@ public class CreateRideCommandHandler : IRequestHandler<CreateRideCommand, Resul
 
         if (!rideResult.IsSuccess)
         {
+            Console.WriteLine($"[DEBUG] Failed to create ride: {rideResult.Error}");
             return Result.Failure<Guid>(rideResult.Error!);
         }
 
+        Console.WriteLine($"[DEBUG] Successfully created ride: {rideResult.Value!.Id}");
+
         await _rideRepository.AddAsync(rideResult.Value!, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        Console.WriteLine($"[DEBUG] Ride saved to database: {rideResult.Value!.Id}");
 
         return Result.Success(rideResult.Value!.Id);
     }

@@ -17,7 +17,11 @@ public class RideOrderRepository : IRideOrderRepository
     public async Task<RideOrder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        .Include(r => r.PickupAddress)  // Only include Address
+        .Include(r => r.DestinationAddress)  // Only include Address
+        .Include(r => r.EstimatedFare)
+        .Include(r => r.FinalFare)
+        .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
     public async Task<RideOrder?> GetByIdWithEventsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -37,11 +41,15 @@ public class RideOrderRepository : IRideOrderRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-            .Where(r => r.PassengerId == passengerId)
-            .OrderByDescending(r => r.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        .Include(r => r.PickupAddress)
+        .Include(r => r.DestinationAddress)
+        .Include(r => r.EstimatedFare)
+        .Include(r => r.FinalFare)
+        .Where(r => r.PassengerId == passengerId)
+        .OrderByDescending(r => r.CreatedAt)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<RideOrder>> GetByDriverIdAsync(
@@ -51,19 +59,27 @@ public class RideOrderRepository : IRideOrderRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-            .Where(r => r.DriverId == driverId)
-            .OrderByDescending(r => r.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        .Include(r => r.PickupAddress)
+        .Include(r => r.DestinationAddress)
+        .Include(r => r.EstimatedFare)
+        .Include(r => r.FinalFare)
+        .Where(r => r.DriverId == driverId)
+        .OrderByDescending(r => r.CreatedAt)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<RideOrder>> GetAvailableRidesAsync(CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-            .Where(r => r.Status == Domain.Enums.RideStatus.Created)
-            .OrderBy(r => r.CreatedAt)
-            .ToListAsync(cancellationToken);
+        .Include(r => r.PickupAddress)
+        .Include(r => r.DestinationAddress)
+        .Include(r => r.EstimatedFare)
+        .Include(r => r.FinalFare)
+        .Where(r => r.Status == Domain.Enums.RideStatus.Created)
+        .OrderBy(r => r.CreatedAt)
+        .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<RideOrder>> GetActiveRidesByDriverAsync(
@@ -108,10 +124,14 @@ public class RideOrderRepository : IRideOrderRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-            .IgnoreQueryFilters()
-            .OrderByDescending(r => r.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        .IgnoreQueryFilters()
+        .Include(r => r.PickupAddress)
+        .Include(r => r.DestinationAddress)
+        .Include(r => r.EstimatedFare)
+        .Include(r => r.FinalFare)
+        .OrderByDescending(r => r.CreatedAt)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync(cancellationToken);
     }
 }

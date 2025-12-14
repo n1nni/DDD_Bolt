@@ -13,6 +13,8 @@ public sealed class Location : IEquatable<Location>
         Longitude = longitude;
     }
 
+    private Location() { }
+
     public double CalculateDistanceTo(Location other)
     {
         // Haversine formula for distance calculation

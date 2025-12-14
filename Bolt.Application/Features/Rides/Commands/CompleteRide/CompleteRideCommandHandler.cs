@@ -11,15 +11,18 @@ public class CompleteRideCommandHandler : IRequestHandler<CompleteRideCommand, R
     private readonly IRideOrderRepository _rideRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMediator _mediator;
 
     public CompleteRideCommandHandler(
         IRideOrderRepository rideRepository,
         IUserRepository userRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IMediator mediator)
     {
         _rideRepository = rideRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
+        _mediator = mediator;
     }
 
     public async Task<Result> Handle(
@@ -68,6 +71,15 @@ public class CompleteRideCommandHandler : IRequestHandler<CompleteRideCommand, R
 
         _rideRepository.Update(ride);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Publish domain events (if you have event handlers)
+        var domainEvents = ride.DomainEvents.ToList();
+        ride.ClearDomainEvents();
+
+        foreach (var domainEvent in domainEvents)
+        {
+            await _mediator.Publish(domainEvent, cancellationToken);
+        }
 
         return Result.Success();
     }

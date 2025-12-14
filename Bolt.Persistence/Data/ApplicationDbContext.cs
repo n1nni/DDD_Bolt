@@ -22,17 +22,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply all configurations from the assembly
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        // Configure TPH inheritance for User -> Driver/Passenger
+        // Configure TPH inheritance
         modelBuilder.Entity<User>()
             .ToTable("Users")
             .HasDiscriminator<string>("UserRole")
             .HasValue<Driver>("Driver")
             .HasValue<Passenger>("Passenger");
 
-        // Configure owned types
+        // Simple owned type configuration - NO nested configuration needed
         modelBuilder.Entity<RideOrder>(builder =>
         {
             builder.OwnsOne(r => r.PickupAddress);

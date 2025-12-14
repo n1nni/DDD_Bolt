@@ -28,13 +28,13 @@ public class AcceptRideCommandHandler : IRequestHandler<AcceptRideCommand, Resul
         var ride = await _rideRepository.GetByIdAsync(request.RideId, cancellationToken);
         if (ride == null)
         {
-            return Result.Failure("Ride not found.");
+            return Result.Failure("Ride not found or has been deleted.");
         }
 
         var driver = await _userRepository.GetDriverByIdAsync(request.DriverId, cancellationToken);
         if (driver == null)
         {
-            return Result.Failure("Driver not found.");
+            return Result.Failure("Driver not found or has been deleted.");
         }
 
         var acceptResult = ride.Accept(driver);

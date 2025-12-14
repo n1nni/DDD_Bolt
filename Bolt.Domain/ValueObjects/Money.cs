@@ -5,7 +5,10 @@ public sealed class Money : IEquatable<Money>
     public decimal Amount { get; }
     public string Currency { get; }
 
-    private Money() { } // EF Core
+    private Money()
+    {
+        Currency = "GEL"; // Default currency
+    }
 
     public Money(decimal amount, string currency = "GEL")
     {
