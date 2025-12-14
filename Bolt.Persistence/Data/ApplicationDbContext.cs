@@ -31,18 +31,60 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .HasValue<Driver>("Driver")
             .HasValue<Passenger>("Passenger");
 
-        // Simple owned type configuration - NO nested configuration needed
+        // Configure RideOrder with owned types - USE THIS EXACT CONFIGURATION
         modelBuilder.Entity<RideOrder>(builder =>
         {
-            builder.OwnsOne(r => r.PickupAddress);
-            builder.OwnsOne(r => r.DestinationAddress);
-            builder.OwnsOne(r => r.EstimatedFare);
-            builder.OwnsOne(r => r.FinalFare);
+            // Configure PickupAddress
+            builder.OwnsOne(r => r.PickupAddress, addressBuilder =>
+            {
+                addressBuilder.Property(a => a.Street).IsRequired().HasMaxLength(200);
+                addressBuilder.Property(a => a.City).IsRequired().HasMaxLength(100);
+                addressBuilder.Property(a => a.PostalCode).HasMaxLength(20);
+
+                // Configure nested Location
+                addressBuilder.OwnsOne(a => a.Location, locationBuilder =>
+                {
+                    locationBuilder.Property(l => l.Latitude).IsRequired().HasColumnType("decimal(9,6)");
+                    locationBuilder.Property(l => l.Longitude).IsRequired().HasColumnType("decimal(9,6)");
+                });
+            });
+
+            // Configure DestinationAddress
+            builder.OwnsOne(r => r.DestinationAddress, addressBuilder =>
+            {
+                addressBuilder.Property(a => a.Street).IsRequired().HasMaxLength(200);
+                addressBuilder.Property(a => a.City).IsRequired().HasMaxLength(100);
+                addressBuilder.Property(a => a.PostalCode).HasMaxLength(20);
+
+                // Configure nested Location
+                addressBuilder.OwnsOne(a => a.Location, locationBuilder =>
+                {
+                    locationBuilder.Property(l => l.Latitude).IsRequired().HasColumnType("decimal(9,6)");
+                    locationBuilder.Property(l => l.Longitude).IsRequired().HasColumnType("decimal(9,6)");
+                });
+            });
+
+            // Configure Money value objects
+            builder.OwnsOne(r => r.EstimatedFare, moneyBuilder =>
+            {
+                moneyBuilder.Property(m => m.Amount).IsRequired().HasColumnType("decimal(18,2)");
+                moneyBuilder.Property(m => m.Currency).IsRequired().HasMaxLength(3);
+            });
+
+            builder.OwnsOne(r => r.FinalFare, moneyBuilder =>
+            {
+                moneyBuilder.Property(m => m.Amount).HasColumnType("decimal(18,2)");
+                moneyBuilder.Property(m => m.Currency).HasMaxLength(3);
+            });
         });
 
         modelBuilder.Entity<Review>(builder =>
         {
-            builder.OwnsOne(r => r.Rating);
+            builder.OwnsOne(r => r.Rating, ratingBuilder =>
+            {
+                ratingBuilder.Property(r => r.Value).IsRequired().HasColumnType("decimal(3,1)");
+                ratingBuilder.Property(r => r.TotalReviews).IsRequired();
+            });
         });
 
         // Configure domain events
