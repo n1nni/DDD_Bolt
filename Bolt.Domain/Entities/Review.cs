@@ -14,7 +14,9 @@ public class Review : IAggregateRoot
     public string Comment { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    private Review() { } // EF Core
+    public bool IsDeleted { get; private set; }
+
+    private Review() { }
 
     private Review(
         Guid id,
@@ -31,6 +33,20 @@ public class Review : IAggregateRoot
         Rating = rating;
         Comment = comment?.Trim() ?? string.Empty;
         CreatedAt = DateTime.UtcNow;
+        IsDeleted = false;
+    }
+
+    // Simple soft delete methods
+    public void MarkAsDeleted()
+    {
+        IsDeleted = true;
+        Console.WriteLine($"[LOG] Review marked as deleted: {Id}");
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        Console.WriteLine($"[LOG] Review restored: {Id}");
     }
 
     public static Result<Review> Create(

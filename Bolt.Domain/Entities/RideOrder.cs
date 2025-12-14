@@ -8,9 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Bolt.Domain.Entities;
 
-// TODO:
-// event logs
-public class RideOrder : IAggregateRoot
+public class RideOrder : IAggregateRoot, ISoftDelete
 {
     public Guid Id { get; private set; }
 
@@ -38,7 +36,9 @@ public class RideOrder : IAggregateRoot
     private readonly List<IDomainEvent> _domainEvents = new();
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    private RideOrder() { } // EF Core
+    public bool IsDeleted { get; private set; }
+
+    private RideOrder() { }
 
     private RideOrder(
         Guid id,
@@ -54,7 +54,22 @@ public class RideOrder : IAggregateRoot
         EstimatedFare = estimatedFare;
         Status = RideStatus.Created;
         CreatedAt = DateTime.UtcNow;
+        IsDeleted = false;
     }
+
+    // Simple soft delete methods
+    public void MarkAsDeleted()
+    {
+        IsDeleted = true;
+        Console.WriteLine($"[LOG] Ride marked as deleted: {Id}");
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        Console.WriteLine($"[LOG] Ride restored: {Id}");
+    }
+    
 
     public static Result<RideOrder> Create(
         Guid id,

@@ -11,7 +11,7 @@ namespace Bolt.Domain.Entities
     /// Single User aggregate. Role determines whether user is a driver or passenger.
     /// Driver-specific data (vehicle, availability) is represented in DriverProfile.
     /// </summary>
-    public class User : IAggregateRoot
+    public class User : IAggregateRoot, ISoftDelete
     {
         public Guid Id { get; private set; }
         public string FullName { get; private set; }
@@ -20,8 +20,9 @@ namespace Bolt.Domain.Entities
         public UserRole Role { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
+        public bool IsDeleted { get; private set; }
 
-        protected User() { } // EF Core
+        protected User() { }
 
         protected User(Guid id, string fullName, string email, string phoneNumber, UserRole role)
         {
@@ -31,7 +32,22 @@ namespace Bolt.Domain.Entities
             PhoneNumber = phoneNumber;
             Role = role;
             CreatedAt = DateTime.UtcNow;
+            IsDeleted = false; // Initialize as not deleted
         }
+
+        // Simple soft delete methods
+        public void MarkAsDeleted()
+        {
+            IsDeleted = true;
+            Console.WriteLine($"[LOG] User marked as deleted: {Id}");
+        }
+
+        public void Restore()
+        {
+            IsDeleted = false;
+            Console.WriteLine($"[LOG] User restored: {Id}");
+        }
+
 
         public static Result<User> Create(
             Guid id,
