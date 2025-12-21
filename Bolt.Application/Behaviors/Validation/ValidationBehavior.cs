@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using MediatR;
-using System.ComponentModel.DataAnnotations;
 
 namespace Bolt.Application.Behaviors.Validation;
 

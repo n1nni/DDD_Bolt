@@ -47,10 +47,11 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
             request.RideId,
             cancellationToken);
 
-        if (existingReview != null)
-        {
-            return Result.Failure<Guid>("Review already exists for this ride.");
-        }
+        // Todo: should be only one rating or maybe it can be updated later
+        //if (existingReview != null)
+        //{
+        //    return Result.Failure<Guid>("Review already exists for this ride.");
+        //}
 
         var driver = await _userRepository.GetDriverByIdAsync(request.DriverId, cancellationToken);
         if (driver == null)
@@ -86,6 +87,7 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
         {
             driver.UpdateRating(rating);
         }
+        //Todo
         else
         {
             var updatedRating = driver.Rating.UpdateWith(request.RatingValue);
