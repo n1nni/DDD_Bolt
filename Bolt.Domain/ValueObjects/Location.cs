@@ -39,8 +39,4 @@ public sealed class Location : IEquatable<Location>
         return Math.Abs(Latitude - other.Latitude) < 0.0001 &&
                Math.Abs(Longitude - other.Longitude) < 0.0001;
     }
-
-    public override bool Equals(object? obj) => Equals(obj as Location);
-    public override int GetHashCode() => HashCode.Combine(Latitude, Longitude);
-    public override string ToString() => $"{Latitude:F6},{Longitude:F6}";
 }

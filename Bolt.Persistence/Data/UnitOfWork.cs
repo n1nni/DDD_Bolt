@@ -17,19 +17,4 @@ public class UnitOfWork : IUnitOfWork
     {
         return await _context.SaveChangesAsync(cancellationToken);
     }
-
-    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        if (_transaction != null)
-        {
-            await _transaction.RollbackAsync(cancellationToken);
-            await _transaction.DisposeAsync();
-            _transaction = null;
-        }
-    }
-
-    public void Dispose()
-    {
-        _transaction?.Dispose();
-    }
 }

@@ -36,19 +36,6 @@ public class Review : IAggregateRoot
         IsDeleted = false;
     }
 
-    // Simple soft delete methods
-    public void MarkAsDeleted()
-    {
-        IsDeleted = true;
-        Console.WriteLine($"[LOG] Review marked as deleted: {Id}");
-    }
-
-    public void Restore()
-    {
-        IsDeleted = false;
-        Console.WriteLine($"[LOG] Review restored: {Id}");
-    }
-
     public static Result<Review> Create(
         Guid id,
         Guid rideId,

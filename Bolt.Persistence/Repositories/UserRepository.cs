@@ -58,23 +58,10 @@ public class UserRepository : IUserRepository
         _context.Users.Update(user);
     }
 
-    // Soft delete
-    public void Remove(User user)
-    {
-        _context.Users.Remove(user);
-    }
-
-    // Restore from soft delete
-    public void Restore(User user)
-    {
-        user.Restore();
-        _context.Users.Update(user);
-    }
-
-    // Get all users (including deleted ones)
+    // Get all users
     public async Task<IEnumerable<User>> GetAllAsync(
         int page = 1,
-        int pageSize = 20,
+        int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -85,10 +72,10 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
-    // Get all drivers (including deleted ones)
+    // Get all drivers
     public async Task<IEnumerable<Driver>> GetAllDriversAsync(
         int page = 1,
-        int pageSize = 20,
+        int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -100,10 +87,10 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
-    // Get all passengers (including deleted ones)
+    // Get all passengers
     public async Task<IEnumerable<Passenger>> GetAllPassengersAsync(
         int page = 1,
-        int pageSize = 20,
+        int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         return await _context.Users

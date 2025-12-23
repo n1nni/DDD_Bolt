@@ -35,8 +35,4 @@ public sealed class Address : IEquatable<Address>
                City == other.City &&
                Location.Equals(other.Location);
     }
-
-    public override bool Equals(object? obj) => Equals(obj as Address);
-    public override int GetHashCode() => HashCode.Combine(Street, City, Location);
-    public override string ToString() => $"{Street}, {City} ({Location})";
 }

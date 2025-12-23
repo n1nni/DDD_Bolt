@@ -47,7 +47,7 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
             request.RideId,
             cancellationToken);
 
-        // Todo: should be only one rating or maybe it can be updated later
+        // Todo: should be only one rating for all customer, line if it is 5 costumer it has 1 rate anyway or maybe it can be updated later
         //if (existingReview != null)
         //{
         //    return Result.Failure<Guid>("Review already exists for this ride.");

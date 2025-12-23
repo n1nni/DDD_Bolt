@@ -15,7 +15,8 @@ public class CreateDriverCommandValidator : AbstractValidator<CreateDriverComman
             .EmailAddress().WithMessage("Invalid email format.");
 
         RuleFor(x => x.PhoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.");
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Invalid phone number format.");
 
         RuleFor(x => x.LicenseNumber)
             .NotEmpty().WithMessage("License number is required.");

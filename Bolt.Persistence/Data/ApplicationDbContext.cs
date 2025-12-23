@@ -31,7 +31,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .HasValue<Driver>("Driver")
             .HasValue<Passenger>("Passenger");
 
-        // Configure RideOrder with owned types - USE THIS EXACT CONFIGURATION
+        // Configure RideOrder with owned types
         modelBuilder.Entity<RideOrder>(builder =>
         {
             // Configure PickupAddress
@@ -87,40 +87,15 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             });
         });
 
-        // Configure domain events
-        modelBuilder.Entity<RideOrder>()
-            .Ignore(r => r.DomainEvents);
-
         // Apply global query filter for soft delete
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<RideOrder>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Review>().HasQueryFilter(e => !e.IsDeleted);
     }
 
-    // Override SaveChanges to handle soft delete
-    public override int SaveChanges()
-    {
-        HandleSoftDelete();
-        return base.SaveChanges();
-    }
-
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        HandleSoftDelete();
+    {     
         return await base.SaveChangesAsync(cancellationToken);
     }
 
-    private void HandleSoftDelete()
-    {
-        foreach (var entry in ChangeTracker.Entries())
-        {
-            if (entry.Entity is ISoftDelete softDeleteEntity && entry.State == EntityState.Deleted)
-            {
-                // Change state to modified instead of deleted
-                entry.State = EntityState.Modified;
-                // Mark as deleted
-                softDeleteEntity.MarkAsDeleted();
-            }
-        }
-    }
 }

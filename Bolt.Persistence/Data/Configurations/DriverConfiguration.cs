@@ -29,7 +29,6 @@ public class DriverConfiguration : IEntityTypeConfiguration<Driver>
         builder.OwnsOne(d => d.Rating);
 
         // Configure completed rides as JSON array for simplicity
-        // Alternatively, you could create a separate table
         builder.Property(d => d.CompletedRideIds)
             .HasConversion(
                 v => string.Join(',', v),

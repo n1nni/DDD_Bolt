@@ -17,27 +17,17 @@ public class RideOrderRepository : IRideOrderRepository
     public async Task<RideOrder?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
-        .Include(r => r.PickupAddress)  // Only include Address
-        .Include(r => r.DestinationAddress)  // Only include Address
+        .Include(r => r.PickupAddress)
+        .Include(r => r.DestinationAddress)
         .Include(r => r.EstimatedFare)
         .Include(r => r.FinalFare)
         .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
-    public async Task<RideOrder?> GetByIdWithEventsAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await _context.RideOrders
-            .Include(r => r.PickupAddress)
-            .Include(r => r.DestinationAddress)
-            .Include(r => r.EstimatedFare)
-            .Include(r => r.FinalFare)
-            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
-    }
-
     public async Task<IEnumerable<RideOrder>> GetByPassengerIdAsync(
         Guid passengerId,
         int page = 1,
-        int pageSize = 20,
+        int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders
@@ -46,24 +36,6 @@ public class RideOrderRepository : IRideOrderRepository
         .Include(r => r.EstimatedFare)
         .Include(r => r.FinalFare)
         .Where(r => r.PassengerId == passengerId)
-        .OrderByDescending(r => r.CreatedAt)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync(cancellationToken);
-    }
-
-    public async Task<IEnumerable<RideOrder>> GetByDriverIdAsync(
-        Guid driverId,
-        int page = 1,
-        int pageSize = 20,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.RideOrders
-        .Include(r => r.PickupAddress)
-        .Include(r => r.DestinationAddress)
-        .Include(r => r.EstimatedFare)
-        .Include(r => r.FinalFare)
-        .Where(r => r.DriverId == driverId)
         .OrderByDescending(r => r.CreatedAt)
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
@@ -104,23 +76,10 @@ public class RideOrderRepository : IRideOrderRepository
         _context.RideOrders.Update(rideOrder);
     }
 
-    // Soft delete
-    public void Remove(RideOrder rideOrder)
-    {
-        _context.RideOrders.Remove(rideOrder);
-    }
-
-    // Restore from soft delete
-    public void Restore(RideOrder rideOrder)
-    {
-        rideOrder.Restore();
-        _context.RideOrders.Update(rideOrder);
-    }
-
-    // Get all rides (including deleted ones)
+    // Get all rides 
     public async Task<IEnumerable<RideOrder>> GetAllAsync(
         int page = 1,
-        int pageSize = 20,
+        int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         return await _context.RideOrders

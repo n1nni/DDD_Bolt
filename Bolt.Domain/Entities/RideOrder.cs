@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Bolt.Domain.Entities;
 
-public class RideOrder : IAggregateRoot, ISoftDelete
+public class RideOrder : IAggregateRoot
 {
     public Guid Id { get; private set; }
 
@@ -33,9 +33,6 @@ public class RideOrder : IAggregateRoot, ISoftDelete
     public string? CancellationReason { get; private set; }
     public Guid? CancelledBy { get; private set; }
 
-    private readonly List<IDomainEvent> _domainEvents = new();
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-
     public bool IsDeleted { get; private set; }
 
     private RideOrder() { }
@@ -56,21 +53,7 @@ public class RideOrder : IAggregateRoot, ISoftDelete
         CreatedAt = DateTime.UtcNow;
         IsDeleted = false;
     }
-
-    // Simple soft delete methods
-    public void MarkAsDeleted()
-    {
-        IsDeleted = true;
-        Console.WriteLine($"[LOG] Ride marked as deleted: {Id}");
-    }
-
-    public void Restore()
-    {
-        IsDeleted = false;
-        Console.WriteLine($"[LOG] Ride restored: {Id}");
-    }
-    
-
+  
     public static Result<RideOrder> Create(
         Guid id,
         Passenger passenger,
@@ -94,7 +77,6 @@ public class RideOrder : IAggregateRoot, ISoftDelete
             return Result<RideOrder>.Failure("Estimated fare is required.");
 
         var ride = new RideOrder(id, passenger.Id, pickupAddress, destinationAddress, estimatedFare);
-        ride.AddDomainEvent(new RideCreatedEvent(id, passenger.Id, pickupAddress, destinationAddress));
 
         Console.WriteLine($"[LOG] Ride created: {id} by Passenger {passenger.Id}");
 
@@ -109,14 +91,13 @@ public class RideOrder : IAggregateRoot, ISoftDelete
         if (!driver.IsAvailable)
             return Result<bool>.Failure("Driver is not available.");
 
-        if (Status != RideStatus.Created && Status != RideStatus.Rejected)
+        if (Status != RideStatus.Created)
             return Result<bool>.Failure($"Cannot accept ride in status {Status}.");
 
         DriverId = driver.Id;
         Status = RideStatus.Accepted;
         AcceptedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideAcceptedEvent(Id, driver.Id));
         Console.WriteLine($"[LOG] Ride accepted: {Id} by Driver {driver.Id}");
 
         return Result<bool>.Success(true);
@@ -138,32 +119,17 @@ public class RideOrder : IAggregateRoot, ISoftDelete
         return Result<bool>.Success(true);
     }
 
-    public Result<bool> StartArriving()
-    {
-        if (!DriverId.HasValue)
-            return Result<bool>.Failure("No driver assigned to this ride.");
-
-        if (Status != RideStatus.Accepted)
-            return Result<bool>.Failure("Ride must be accepted before driver can start arriving.");
-
-        Status = RideStatus.DriverArriving;
-        Console.WriteLine($"[LOG] Driver arriving for ride: {Id}");
-
-        return Result<bool>.Success(true);
-    }
-
     public Result<bool> Start()
     {
         if (!DriverId.HasValue)
             return Result<bool>.Failure("No driver assigned to this ride.");
 
         if (Status != RideStatus.DriverArriving && Status != RideStatus.Accepted)
-            return Result<bool>.Failure("Ride must be in 'Accepted' or 'DriverArriving' status to start.");
+            return Result<bool>.Failure("Ride must be in 'Accepted' status to start.");
 
         Status = RideStatus.InProgress;
         StartedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideStartedEvent(Id, DriverId.Value));
         Console.WriteLine($"[LOG] Ride started: {Id}");
 
         return Result<bool>.Success(true);
@@ -184,7 +150,6 @@ public class RideOrder : IAggregateRoot, ISoftDelete
         Status = RideStatus.Completed;
         CompletedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideCompletedEvent(Id, DriverId.Value, PassengerId, finalFare));
         Console.WriteLine($"[LOG] Ride completed: {Id}. Final fare: {finalFare}");
 
         return Result<bool>.Success(true);
@@ -206,33 +171,8 @@ public class RideOrder : IAggregateRoot, ISoftDelete
         CancelledBy = cancelledBy;
         CancelledAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RideCancelledEvent(Id, cancelledBy, reason ?? "No reason provided"));
         Console.WriteLine($"[LOG] Ride cancelled: {Id} by User {cancelledBy}. Reason: {reason}");
 
         return Result<bool>.Success(true);
-    }
-
-    public Result<bool> UpdateEstimatedFare(Money newEstimate)
-    {
-        if (newEstimate == null)
-            return Result<bool>.Failure("Estimated fare cannot be null.");
-
-        if (Status != RideStatus.Created)
-            return Result<bool>.Failure("Estimated fare can only be updated before the ride is accepted.");
-
-        EstimatedFare = newEstimate;
-        Console.WriteLine($"[LOG] Ride estimated fare updated: {Id} - New fare: {newEstimate}");
-
-        return Result<bool>.Success(true);
-    }
-
-    private void AddDomainEvent(IDomainEvent domainEvent)
-    {
-        _domainEvents.Add(domainEvent);
-    }
-
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
     }
 }

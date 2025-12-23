@@ -33,6 +33,5 @@ public sealed class Rating : IEquatable<Rating>
         other != null && Math.Abs(Value - other.Value) < 0.01 && TotalReviews == other.TotalReviews;
 
     public override bool Equals(object? obj) => Equals(obj as Rating);
-    public override int GetHashCode() => HashCode.Combine(Value, TotalReviews);
     public override string ToString() => $"{Value:F1} ({TotalReviews} reviews)";
 }

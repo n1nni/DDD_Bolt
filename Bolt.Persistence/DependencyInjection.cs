@@ -8,37 +8,36 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Bolt.Persistence
+namespace Bolt.Persistence;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructure(
-            this IServiceCollection services,
-            IConfiguration configuration)
-        {
-            // Register DbContext
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    configuration.GetConnectionString("DefaultConnection"),
-                    sqlOptions =>
-                    {
-                        sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                    }));
+        // Register DbContext
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions =>
+                {
+                    sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                }));
 
-            // Register Unit of Work
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+        // Register Unit of Work
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // Register Repositories
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IRideOrderRepository, RideOrderRepository>();
-            services.AddScoped<IReviewRepository, ReviewRepository>();
+        // Register Repositories
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRideOrderRepository, RideOrderRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
 
-            // Register Domain Service Implementations
-            services.AddScoped<IPricingService, PricingService>();
+        // Register Domain Service Implementations
+        services.AddScoped<IPricingService, PricingService>();
 
-            Console.WriteLine("[INFRA-LOG] Infrastructure services registered");
+        Console.WriteLine("[INFRA-LOG] Infrastructure services registered");
 
-            return services;
-        }
+        return services;
     }
 }

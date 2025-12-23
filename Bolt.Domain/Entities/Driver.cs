@@ -21,7 +21,7 @@ public sealed class Driver : User
     internal Driver(Guid id, string fullName, string email, string phoneNumber)
         : base(id, fullName, email, phoneNumber, UserRole.Driver)
     {
-        IsAvailable = false; // Driver must complete onboarding first
+        IsAvailable = true;
     }
 
     public static Result<Driver> CreateDriver(
@@ -69,20 +69,6 @@ public sealed class Driver : User
     {
         IsAvailable = available;
         Console.WriteLine($"[LOG] Driver availability changed: {Id} - Available: {available}");
-    }
-
-    public void UpdateVehicleInfo(string vehicleModel, string vehiclePlateNumber)
-    {
-        if (string.IsNullOrWhiteSpace(vehicleModel))
-            throw new ArgumentException("Vehicle model is required.", nameof(vehicleModel));
-
-        if (string.IsNullOrWhiteSpace(vehiclePlateNumber))
-            throw new ArgumentException("Vehicle plate number is required.", nameof(vehiclePlateNumber));
-
-        VehicleModel = vehicleModel.Trim();
-        VehiclePlateNumber = vehiclePlateNumber.Trim().ToUpperInvariant();
-
-        Console.WriteLine($"[LOG] Driver vehicle info updated: {Id}");
     }
 
     public Result<bool> AddCompletedRide(Guid rideId)

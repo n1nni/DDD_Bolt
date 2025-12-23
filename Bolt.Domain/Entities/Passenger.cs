@@ -18,21 +18,6 @@ public sealed class Passenger : User
     {
     }
 
-    public void UpdateRating(Rating rating)
-    {
-        Rating = rating ?? throw new ArgumentNullException(nameof(rating));
-        Console.WriteLine($"[LOG] Passenger rating updated: {Id} - New rating: {rating}");
-    }
-
-    public void SetPreferredPaymentMethod(string paymentMethod)
-    {
-        if (string.IsNullOrWhiteSpace(paymentMethod))
-            throw new ArgumentException("Payment method cannot be empty.", nameof(paymentMethod));
-
-        PreferredPaymentMethod = paymentMethod.Trim();
-        Console.WriteLine($"[LOG] Passenger payment method set: {Id} - {paymentMethod}");
-    }
-
     public void AddRideToHistory(Guid rideId)
     {
         if (rideId == Guid.Empty)
