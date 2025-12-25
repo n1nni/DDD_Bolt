@@ -1,14 +1,12 @@
 ﻿using Bolt.Domain.Abstractions;
 using Bolt.Domain.Enums;
 using Bolt.Domain.Events;
-using Bolt.Domain.Exceptions;
 using Bolt.Domain.Shared;
 using Bolt.Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
 
 namespace Bolt.Domain.Entities;
 
-public class RideOrder : IAggregateRoot
+public class RideOrder : AggregateRoot
 {
     public Guid Id { get; private set; }
 
@@ -78,6 +76,9 @@ public class RideOrder : IAggregateRoot
 
         var ride = new RideOrder(id, passenger.Id, pickupAddress, destinationAddress, estimatedFare);
 
+        // Add domain event
+        ride.AddDomainEvent(new RideCreatedEvent(id, passenger.Id));
+
         Console.WriteLine($"[LOG] Ride created: {id} by Passenger {passenger.Id}");
 
         return Result<RideOrder>.Success(ride);
@@ -98,23 +99,10 @@ public class RideOrder : IAggregateRoot
         Status = RideStatus.Accepted;
         AcceptedAt = DateTime.UtcNow;
 
+        // Add domain event
+        AddDomainEvent(new RideAcceptedEvent(Id, driver.Id));
+
         Console.WriteLine($"[LOG] Ride accepted: {Id} by Driver {driver.Id}");
-
-        return Result<bool>.Success(true);
-    }
-
-    public Result<bool> Reject(Driver driver, string reason)
-    {
-        if (driver == null)
-            return Result<bool>.Failure("Driver cannot be null.");
-
-        if (Status != RideStatus.Created)
-            return Result<bool>.Failure("Only created rides can be rejected.");
-
-        Status = RideStatus.Rejected;
-        CancellationReason = reason?.Trim();
-
-        Console.WriteLine($"[LOG] Ride rejected: {Id} by Driver {driver.Id}. Reason: {reason}");
 
         return Result<bool>.Success(true);
     }
@@ -129,6 +117,9 @@ public class RideOrder : IAggregateRoot
 
         Status = RideStatus.InProgress;
         StartedAt = DateTime.UtcNow;
+
+        // Add domain event
+        AddDomainEvent(new RideStartedEvent(Id));
 
         Console.WriteLine($"[LOG] Ride started: {Id}");
 
@@ -150,6 +141,9 @@ public class RideOrder : IAggregateRoot
         Status = RideStatus.Completed;
         CompletedAt = DateTime.UtcNow;
 
+        // Add domain event
+        AddDomainEvent(new RideCompletedEvent(Id, finalFare.Amount));
+
         Console.WriteLine($"[LOG] Ride completed: {Id}. Final fare: {finalFare}");
 
         return Result<bool>.Success(true);
@@ -170,6 +164,9 @@ public class RideOrder : IAggregateRoot
         CancellationReason = reason?.Trim();
         CancelledBy = cancelledBy;
         CancelledAt = DateTime.UtcNow;
+
+        // Add domain event
+        AddDomainEvent(new RideCancelledEvent(Id, cancelledBy, reason));
 
         Console.WriteLine($"[LOG] Ride cancelled: {Id} by User {cancelledBy}. Reason: {reason}");
 

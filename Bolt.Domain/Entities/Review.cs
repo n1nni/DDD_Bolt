@@ -1,10 +1,11 @@
 ﻿using Bolt.Domain.Abstractions;
+using Bolt.Domain.Events;
 using Bolt.Domain.Shared;
 using Bolt.Domain.ValueObjects;
 
 namespace Bolt.Domain.Entities;
 
-public class Review : IAggregateRoot
+public class Review : AggregateRoot
 {
     public Guid Id { get; private set; }
     public Guid RideId { get; private set; }
@@ -63,6 +64,14 @@ public class Review : IAggregateRoot
             return Result<Review>.Failure("Comment cannot exceed 500 characters.");
 
         var review = new Review(id, rideId, driver.Id, passenger.Id, rating, comment);
+
+        // Add domain event
+        review.AddDomainEvent(new ReviewCreatedEvent(
+            id,
+            driver.Id,
+            passenger.Id,
+            rating.Value));
+
         Console.WriteLine($"[LOG] Review created: {id} for Driver {driver.Id} by Passenger {passenger.Id}");
 
         return Result<Review>.Success(review);

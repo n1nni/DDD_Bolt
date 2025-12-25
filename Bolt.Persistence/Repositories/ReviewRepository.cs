@@ -39,4 +39,15 @@ public class ReviewRepository : IReviewRepository
         await _context.Reviews.AddAsync(review, cancellationToken);
     }
 
+    public async Task<Review?> GetByDriverAndPassengerAsync(
+    Guid driverId,
+    Guid passengerId,
+    CancellationToken cancellationToken = default)
+    {
+        return await _context.Reviews
+            .FirstOrDefaultAsync(r =>
+                r.DriverId == driverId &&
+                r.PassengerId == passengerId,
+                cancellationToken);
+    }
 }

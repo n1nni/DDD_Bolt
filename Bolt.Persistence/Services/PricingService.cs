@@ -42,6 +42,7 @@ public class PricingService : IPricingService
         // Round up to nearest 0.25
         total = Math.Ceiling(total * 4m) / 4m;
 
+
         return new Money(total, "GEL");
     }
 }

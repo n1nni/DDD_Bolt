@@ -27,8 +27,8 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
     }
 
     public async Task<Result<Guid>> Handle(
-        CreateReviewCommand request,
-        CancellationToken cancellationToken)
+    CreateReviewCommand request,
+    CancellationToken cancellationToken)
     {
         // Verify ride exists and is completed
         var ride = await _rideRepository.GetByIdAsync(request.RideId, cancellationToken);
@@ -42,17 +42,7 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
             return Result.Failure<Guid>("Can only review completed rides.");
         }
 
-        // Check if review already exists
-        var existingReview = await _reviewRepository.GetByRideIdAsync(
-            request.RideId,
-            cancellationToken);
-
-        // Todo: should be only one rating for all customer, line if it is 5 costumer it has 1 rate anyway or maybe it can be updated later
-        //if (existingReview != null)
-        //{
-        //    return Result.Failure<Guid>("Review already exists for this ride.");
-        //}
-
+        // Get driver and passenger
         var driver = await _userRepository.GetDriverByIdAsync(request.DriverId, cancellationToken);
         if (driver == null)
         {
@@ -66,6 +56,27 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
         if (passenger == null)
         {
             return Result.Failure<Guid>("Passenger not found.");
+        }
+
+        // **CRITICAL FIX**: Check if this passenger has already reviewed this driver
+        var existingReview = await _reviewRepository.GetByDriverAndPassengerAsync(
+            driver.Id,
+            passenger.Id,
+            cancellationToken);
+
+        if (existingReview != null)
+        {
+            return Result.Failure<Guid>("You have already reviewed this driver.");
+        }
+
+        // Alternative: Check if review exists for this specific ride
+        var existingReviewForRide = await _reviewRepository.GetByRideIdAsync(
+            request.RideId,
+            cancellationToken);
+
+        if (existingReviewForRide != null)
+        {
+            return Result.Failure<Guid>("Review already exists for this ride.");
         }
 
         var rating = new Rating(request.RatingValue);
@@ -87,7 +98,6 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
         {
             driver.UpdateRating(rating);
         }
-        //Todo
         else
         {
             var updatedRating = driver.Rating.UpdateWith(request.RatingValue);

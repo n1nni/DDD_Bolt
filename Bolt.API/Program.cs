@@ -16,7 +16,6 @@ builder.Services.AddApplication();
 // Add Infrastructure layer
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Configure CORS if needed
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -30,7 +29,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

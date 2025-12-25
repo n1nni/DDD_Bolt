@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Bolt.API.Controllers;
 
-// todo: fix bug about value object in databse
 
 [ApiController]
 [Route("api/[controller]")]

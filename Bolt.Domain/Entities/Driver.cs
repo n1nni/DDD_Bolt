@@ -1,7 +1,9 @@
 ﻿using Bolt.Domain.Abstractions;
 using Bolt.Domain.Enums;
+using Bolt.Domain.Events;
 using Bolt.Domain.Shared;
 using Bolt.Domain.ValueObjects;
+using System.Data;
 
 namespace Bolt.Domain.Entities;
 
@@ -68,6 +70,8 @@ public sealed class Driver : User
     public void SetAvailability(bool available)
     {
         IsAvailable = available;
+        // Add domain event
+        AddDomainEvent(new DriverAvailabilityChangedEvent(Id, available));
         Console.WriteLine($"[LOG] Driver availability changed: {Id} - Available: {available}");
     }
 

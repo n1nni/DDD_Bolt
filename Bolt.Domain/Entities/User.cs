@@ -1,11 +1,12 @@
 ﻿using Bolt.Domain.Abstractions;
 using Bolt.Domain.Enums;
+using Bolt.Domain.Events;
 using Bolt.Domain.Shared;
 
 
 namespace Bolt.Domain.Entities;
 
-public class User : IAggregateRoot
+public class User : AggregateRoot
 {
     public Guid Id { get; private set; }
     public string FullName { get; private set; }
@@ -56,6 +57,9 @@ public class User : IAggregateRoot
                                                phoneNumber.Trim()),
             _ => throw new ArgumentOutOfRangeException(nameof(role))
         };
+
+        // Add domain event
+        user.AddDomainEvent(new UserCreatedEvent(id, role.ToString()));
 
         Console.WriteLine($"[LOG] User created: {user.Id} - {user.FullName} ({user.Role})");
         return Result<User>.Success(user);
