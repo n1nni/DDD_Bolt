@@ -361,3 +361,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+test-publish/
+
+# Build outputs
+bin/
+obj/
+publish/
+test-publish/
+
+# User-specific files
+*.csproj.user
+*.user
+*.suo
+
+# VS files
+.vs/
+_ReSharper.*/
