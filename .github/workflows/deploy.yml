@@ -8,8 +8,8 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x' 
-  PROJECT_PATH: 'src/Presentation/BoltAPI.csproj'  # Update with your actual API project name
-  TEST_PROJECT_PATH: 'test/Bolt.Tests.Unit.csproj'  # Update with your test project
+  PROJECT_PATH: 'Bolt.API/Bolt.API.csproj' 
+  TEST_PROJECT_PATH: 'Bolt.Tests.Unit/Bolt.Tests.Unit.csproj'
 
 jobs:
   build-and-test:
