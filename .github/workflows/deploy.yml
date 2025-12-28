@@ -3,14 +3,13 @@ name: Build, Test and Deploy to AWS
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+
 env:
   DOTNET_VERSION: '8.0.x'
   PROJECT_PATH: 'Bolt.API/Bolt.API.csproj'
   TEST_PROJECT_PATH: 'Bolt.Tests.Unit/Bolt.Tests.Unit.csproj'
   AWS_REGION: 'eu-north-1'
-  AWS_ACCOUNT_ID: '425210931122' 
+  AWS_ACCOUNT_ID: '425210931122'  # Your actual AWS Account ID
 
 jobs:
   build-and-test:
@@ -88,7 +87,10 @@ jobs:
     
     - name: Create and Deploy EB Application Version
       run: |
-        VERSION_LABEL="v${{ github.run_number }}-${{ github.sha:0:8 }}"
+        # Create version label with first 8 characters of SHA
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+        VERSION_LABEL="v${{ github.run_number }}-${SHORT_SHA}"
+        
         S3_BUCKET="elasticbeanstalk-${{ env.AWS_REGION }}-${{ env.AWS_ACCOUNT_ID }}"
         S3_KEY="bolt-api/deployment-${{ github.run_number }}.zip"
         
